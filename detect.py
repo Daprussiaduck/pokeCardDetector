@@ -557,12 +557,14 @@ class CardDetector:
                     }
             lastCost = self.getCardPrice(cardID, variant)
             self.addDB = pd.DataFrame({
+                "index": [(cardID, variant)],
                 "id": [cardID],
                 "Quantity": [quantity],
                 "variant": [variant],
                 "lastCost": [lastCost],
                 "priceURL": self.getPriceURL(cardID)
             })
+            self.addDB.set_index(['index'], inplace=True)
             self.addDB.to_excel(self.DBPath)
             return {"success": True}
         if quantity <= 0:
@@ -577,12 +579,14 @@ class CardDetector:
             }
         lastCost = self.getCardPrice(cardID, variant)
         self.addDB = pd.concat([self.addDB, pd.DataFrame({
-                "id": [cardID],
+                "index": [(cardID, variant)],
+                "id": cardID,
                 "Quantity": [quantity],
                 "variant": [variant],
                 "lastCost": [lastCost],
                 "priceURL": self.getPriceURL(cardID)
             })])
+        self.addDB.set_index(['index'], inplace=True)
         self.addDB.to_excel(self.DBPath)
         return {"success": True}
     

@@ -76,57 +76,14 @@ const addCard = (e) => {
             a.classList.add("dropdown-item");
             a.value = variant;
             a.innerText = variant;
+            const actAddButton = document.getElementById("actAdd");
+            actAddButton.value = e.target.value;
             a.onclick = (ee) => {
                 const label = document.getElementById("variantLabel");
                 label.innerText = `Variant Selected: ${ee.target.value}`;
-                const accBtn = document.getElementById("actAdd");
-                accBtn.value = ee.target.value;
-                accBtn.disabled = false;
-                accBtn.onclick = (eee) => {
-                    console.log(e.target.value, eee.target.value);
-                    fetch(`${baseURL}/addCard`, {
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json, text/plain'
-                        },
-                        method: 'PUT',
-                        cache: 'no-cache',
-                        redirect: 'follow',
-                        body: JSON.stringify({
-                            id: e.target.value,
-                            variant: eee.target.value,
-                            quantity: Number.parseInt(document.getElementById("qtyText").value)
-                        })
-                    }).then((dat) => {
-                        return dat.json();
-                    }).then((dat) => {
-                        console.log(dat.success);
-                        if (dat.success === true){
-                            console.log("hide");
-                            const varSelect = bootstrap.Modal.getOrCreateInstance(document.getElementById('variantSelectModal'), {});
-                            //const varSelect = new bootstrap.Modal(document.getElementById('variantSelectModal'), {});
-                            // const table = document.getElementById("dataTable");
-                            // const tr = document.createElement("tr");
-                            // let td = document.createElement("td");
-                            // td.innerText = e.target.cardName;
-                            // tr.appendChild(td);
-                            // td = document.createElement("td");
-                            // td.innerText = eee.target.value;
-                            // tr.appendChild(td);
-                            // td = document.createElement("td");
-                            // td.innerText = Number.parseInt(document.getElementById("qtyText").value);
-                            // tr.appendChild(td);
-                            varSelect.hide();
-                            const iframe = document.getElementById("view");
-                            iframe.src = `${baseURL}/viewNoNav`;
-                            clearPhoto();
-                            let CardDiv = document.getElementById("detectedCardsDiv");
-                            CardDiv.innerHTML = "";
-                            let detCardLabel = document.getElementById("detectedCardLabel");
-                            detCardLabel.innerText = "No Card Detected";
-                        }
-                    });
-                };
+                label.value = ee.target.value;
+                const addButton = document.getElementById("actAdd");
+                addButton.disabled = false;
             };
             li.appendChild(a);
             cameraSelect.appendChild(li);
@@ -227,6 +184,43 @@ window.onload = () => {
     setupCamera();
     const iframe = document.getElementById("view");
     iframe.src = `${baseURL}/viewNoNav`;
+    const accBtn = document.getElementById("actAdd");
+    const e = document.getElementById("variantLabel");
+    accBtn.onclick = (eee) => {
+        console.log(e.value, eee.target.value);
+        fetch(`${baseURL}/addCard`, {
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json, text/plain'
+            },
+            method: 'PUT',
+            cache: 'no-cache',
+            redirect: 'follow',
+            body: JSON.stringify({
+                id: eee.target.value,
+                variant: e.value,
+                quantity: Number.parseInt(document.getElementById("qtyText").value)
+            })
+        }).then((dat) => {
+            return dat.json();
+        }).then((dat) => {
+            console.log(dat.success);
+            if (dat.success === true){
+                console.log("hide");
+                const varSelect = bootstrap.Modal.getOrCreateInstance(document.getElementById('variantSelectModal'), {});
+                varSelect.hide();
+                const iframe = document.getElementById("view");
+                iframe.src = `${baseURL}/viewNoNav`;
+                clearPhoto();
+                let CardDiv = document.getElementById("detectedCardsDiv");
+                CardDiv.innerHTML = "";
+                let detCardLabel = document.getElementById("detectedCardLabel");
+                detCardLabel.innerText = "No Card Detected";
+            } else {
+                console.log(dat);
+            }
+        });
+    };
 };
 
 window.onclose = () => {
