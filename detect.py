@@ -585,8 +585,8 @@ class CardDetector:
                 "variant": [variant],
                 "lastCost": [lastCost],
                 "priceURL": self.getPriceURL(cardID)
-            })])
-        self.addDB.set_index(['index'], inplace=True)
+            }).set_index(['index'])])
+        #self.addDB.set_index(['index'], inplace=True)
         self.addDB.to_excel(self.DBPath)
         return {"success": True}
     
