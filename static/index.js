@@ -5,7 +5,7 @@ let baseURL = "";
 const deleteDB = (e) => {
     const tr = e.target.parentElement.parentElement;
     const trName = Array.from(tr.children)[0].innerText
-    fetch(`${baseURL}deleteDB`,{
+    fetch(`${baseURL}/deleteDB`,{
         headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json, text/plain'
