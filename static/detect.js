@@ -69,6 +69,7 @@ const addCard = (e) => {
     }).then((data) => {
         // console.log(data);
         const list = document.getElementById("variantSelect");
+        list.innerHTML = "";
         data.forEach((variant) => {
             const li = document.createElement("li");
             const a = document.createElement("a");
