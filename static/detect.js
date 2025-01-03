@@ -118,7 +118,7 @@ const addCard = (e) => {
                             // tr.appendChild(td);
                             varSelect.hide();
                             const iframe = document.getElementById("view");
-                            iframe.src = `${baseURL}/view`;
+                            iframe.src = `${baseURL}/viewNoNav`;
                             clearPhoto();
                             let CardDiv = document.getElementById("detectedCardsDiv");
                             CardDiv.innerHTML = "";
