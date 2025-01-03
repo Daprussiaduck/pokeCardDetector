@@ -561,7 +561,7 @@ class CardDetector:
                 "Quantity": [quantity],
                 "variant": [variant],
                 "lastCost": [lastCost],
-                "priceURL": self.getPriceURL(cardID['id'])
+                "priceURL": self.getPriceURL(cardID)
             })
             self.addDB.to_excel(self.DBPath)
             return {"success": True}
