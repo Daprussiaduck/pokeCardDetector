@@ -11,4 +11,4 @@ gunicorn --workers=4 --certfile CERT_FILE.pem --keyfile CERT_KEY_FILE.pem -b 0.0
 ```
 
 The first time the program is run, the database will need to be built, and while it is multithreaded it will still take some time.
-It will download all of the images (~15 GB) and calculate all of the hashes for the detection once done. 
+It will download all of the images (~15 GB) and calculate all of the hashes for the detection once done.
