@@ -14,6 +14,10 @@ def stringToImage(base64_string):
     imgdata = base64.b64decode(base64_string)
     return Image.open(io.BytesIO(imgdata))
 
+@app.route("/test")
+def test():
+    return flask.render_template('test.html')
+
 @app.route("/")
 @app.route("/index.html")
 def index():
@@ -57,7 +61,10 @@ def detectCard():
 
 @app.route("/DBs")
 def getDBs():
-    return {"dbs": detector.getDBs()}
+    return {
+        "success": True,
+        "dbs": detector.getDBs()
+        }
 
 @app.route("/changeDB", methods=["POST"])
 def changeDB():

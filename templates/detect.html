@@ -13,54 +13,6 @@
         <script src="{{ url_for('static', filename='detect.js') }}" type="module"></script>
     </head>
     <body>
-        <nav class="navbar  navbar-expand-lg bg-body-tertiary fixed-top" data-bs-theme="dark" id="navBar">
-            <div class="container-fluid">
-                <a class="navbar-brand" href="/">
-                    <img src="{{ url_for('static', filename='favicon.ico') }}" alt="Logo" width="30" height="24" class="d-inline-block align-text-top"/>
-                    Pokemon Card Detector
-                </a>
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="/">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" aria-current="page" href="detect">Detector</a>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            View Databases
-                        </a>
-                        <ul class="dropdown-menu" id="dropDownView">
-                            <li><a class="dropdown-item">Action</a></li>
-                            <li><a class="dropdown-item">Another action</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#">View All Databases</a></li>
-                        </ul>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            Edit Databases
-                        </a>
-                        <ul class="dropdown-menu" id="dropDownEdit">
-                            <li><a class="dropdown-item" href="#">Action</a></li>
-                            <li><a class="dropdown-item" href="#">Another action</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#">Add New Database</a></li>
-                        </ul>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link disabled" aria-disabled="true" id="navDatabaseSelected">Database Selected: None</a>
-                    </li>
-                    <li class="nav-item d-flex">
-                        <a class="nav-link">About</a>
-                    </li>
-                </ul>
-                <form class="d-flex" role="search">
-                    <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
-                    <button class="btn btn-outline-success" type="submit">Search</button>
-                </form>
-            </div>
-        </nav>
         <div class="modal fade" id="variantSelectModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
             <div class="modal-dialog">
               <div class="modal-content">
@@ -87,8 +39,98 @@
                 </div>
               </div>
             </div>
-          </div>
+        </div>
+        
+          <div class="modal fade" id="errorModalMain" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="errorModal" aria-hidden="true">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h1 class="modal-title fs-5" id="errorModal">Error:</h1>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-danger" id="modalErr" role="alert">
+                        A simple danger alert—check it out!
+                    </div>                      
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                  <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Understood</button>
+                </div>
+              </div>
+            </div>
+        </div>
+        
+        <div class="modal fade" id="addNewModal" tabindex="-1" aria-labelledby="addNewModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="addNewModalLabel">Add New Database</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text" id="DBNameLabel">Enter DB Name:</span>
+                            <input type="text" class="form-control" placeholder="dbName.xlsx" aria-label="dbName" id="txtDBName" aria-describedby="DBNameLabel-addon1">
+                        </div>  
+                    </div>
+                    <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="btnMakeDB" data-bs-dismiss="modal">Make db</button>
+                    </div>
+                </div>
+            </div>
+        </div>
           
+        <nav class="navbar  navbar-expand-lg bg-body-tertiary fixed-top" data-bs-theme="dark" id="navBar">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="/">
+                    <img src="{{ url_for('static', filename='favicon.ico') }}" alt="Logo" width="30" height="24" class="d-inline-block align-text-top"/>
+                    Pokemon Card Detector
+                </a>
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link btn-link" href="detect" id="detectorLink">Detector</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            View Databases
+                        </a>
+                        <ul class="dropdown-menu" id="dropDownView">
+                            <li><a class="dropdown-item">Action</a></li>
+                            <li><a class="dropdown-item">Another action</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="">View All Databases</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Edit Databases
+                        </a>
+                        <ul class="dropdown-menu" id="dropDownEdit">
+                            <li><a class="dropdown-item" href="#">Action</a></li>
+                            <li><a class="dropdown-item" href="#">Another action</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#">Add New Database</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link disabled" id="navDatabaseSelected" aria-current="page">Database Selected: None</a>
+                    </li>
+                    <li class="nav-item d-flex">
+                        <a class="nav-link">About</a>
+                    </li>
+                </ul>
+                <form class="d-flex" role="search">
+                    <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
+                    <button class="btn btn-outline-success" type="submit">Search</button>
+                </form>
+            </div>
+        </nav>
+        
         <div class="container">
             <div class="row flex-row align-items-center">
                 <div class="center d-flex col justify-content-center align-items-center">
@@ -118,22 +160,10 @@
                 </div>
             </div>
         </div>
+
         <h4 class="label center" id="detectedCardLabel"> No Card Detected</h4>
         <div class=" container-fluid cards center" id="detectedCardsDiv"></div>
-        <!-- <table class="table table-bordered table-striped align-middle bg-white sticky-header">
-            <thead class="table-dark">
-                <tr>
-                    <th>Name</th>
-                    <th class="shrinkcol">Variant</th>
-                    <th class="shrinkcol">Quantity</th>
-                    <th class="shrinkcol justify-text-center">Inc/Dec</th>
-                    <th class="shrinkcol">Card ID</th>
-                    <th class="shrinkcol">Delete?</th>
-                </tr>
-            </thead>
-            <tbody id="dataTable">
-            </tbody>
-        </table> -->
+        
         <iframe id="view"></iframe>
     </body>
 </html>

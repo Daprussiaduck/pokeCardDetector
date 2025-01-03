@@ -1,4 +1,4 @@
-import {modifyNavBar, viewDB, editDB} from "./utils.js"
+import {getJSON, postJSON, putJSON, modifyNavBar, viewDB, editDB} from "./utils.js"
 
 let baseURL = "";
 

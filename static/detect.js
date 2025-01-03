@@ -1,4 +1,4 @@
-import { modifyNavBar, editDB, viewDB } from "./utils.js"
+import {getJSON, postJSON, putJSON, modifyNavBar, viewDB, editDB, showError} from "./utils.js"
 let baseURL = "";
 let height = 1920;
 let width = 1080;
@@ -64,18 +64,21 @@ const switchCamera = (camera) => {
 
 const addCard = (e) => {
     // console.log(e.target.value)
-    fetch(`${baseURL}/versions/${e.target.value}`).then((data) => {
-        return data.json();
-    }).then((data) => {
+    // fetch(`${baseURL}/versions/${e.target.value}`).then((data) => {
+    //     return data.json();
+    // })
+    getJSON(`${baseURL}/versions/${e.target.value}`).then((data) => {
         // console.log(data);
         const list = document.getElementById("variantSelect");
         list.innerHTML = "";
-        data.forEach((variant) => {
+        console.log(data);
+        console.log(typeof data)
+        for(let i = 0; i < data.length; i++){
             const li = document.createElement("li");
             const a = document.createElement("a");
             a.classList.add("dropdown-item");
-            a.value = variant;
-            a.innerText = variant;
+            a.value = data[i];
+            a.innerText = data[i];
             const actAddButton = document.getElementById("actAdd");
             actAddButton.value = e.target.value;
             a.onclick = (ee) => {
@@ -88,9 +91,11 @@ const addCard = (e) => {
             li.appendChild(a);
             cameraSelect.appendChild(li);
             list.appendChild(li);
-        });
-        const varSelect = bootstrap.Modal.getOrCreateInstance(document.getElementById('variantSelectModal'), {});
-        varSelect.show();
+        }
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('variantSelectModal'), {}).show();
+    }).catch((err) => {
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('variantSelectModal'), {}).hide();
+        showError(err);
     });
 };
 
@@ -107,47 +112,44 @@ const takePicture = () => {
         const data = canvas.toDataURL("image/png");
         photo.setAttribute("src", data);
         //console.log(video.srcObject)
-        fetch(`${baseURL}/detect`, {
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json, text/plain'
-            },
-            method: 'POST',
-            cache: 'no-cache',
-            redirect: 'follow',
-            body: JSON.stringify({
+        postJSON(`${baseURL}/detect`,
+            JSON.stringify({
                 imgData: data
             })
-        }).then((data) => {
-            return (data.json());
-        }).then((data) => {
+        ).then((data) => { // TODO: Add success check
             // console.log(data)
-            if (data.detectedCard && data.fallbackCards.length >= 1){
-                // console.log(`${data.detectedCard.name} from ${data.detectedCard.set}`)
-                detCardLabel.innerText = `Detected: ${data.detectedCard.name} from: ${data.detectedCard.set}`;
-                for (let row = 0; row < data.fallbackCards.length; row++){
-                    // console.log(data.fallbackCards[row])
-                    for (let card = 0; card < data.fallbackCards[row].length; card++){
-                        //console.log(data.fallbackCards[row][card])
-                        let cardDiv = document.createElement("div");
-                        cardDiv.classList.add("cards", "card", "center");
-                        cardDiv.value = data.fallbackCards[row][card].id;
-                        let cardLabel = document.createElement("h6");
-                        cardLabel.innerText = `${data.fallbackCards[row][card].name} | ${data.fallbackCards[row][card].setName}`;
-                        cardLabel.value = data.fallbackCards[row][card].id;
-                        cardLabel.cardName = data.fallbackCards[row][card].name;
-                        cardLabel.onclick = addCard;
-                        cardDiv.appendChild(cardLabel);
-                        let cardImg = document.createElement("img");
-                        cardImg.setAttribute("src", data.fallbackCards[row][card].images.large);
-                        cardImg.value = data.fallbackCards[row][card].id;
-                        cardImg.cardName = data.fallbackCards[row][card].name;
-                        cardImg.onclick = addCard;
-                        //cardDiv.onclick = addCard;
-                        cardDiv.appendChild(cardImg);
-                        CardDiv.appendChild(cardDiv);
+            if (typeof data.success != "undefined" && data.success == true){
+                if (data.detectedCard && data.fallbackCards.length >= 1){
+                    // console.log(`${data.detectedCard.name} from ${data.detectedCard.set}`)
+                    detCardLabel.innerText = `Detected: ${data.detectedCard.name} from: ${data.detectedCard.set}`;
+                    for (let row = 0; row < data.fallbackCards.length; row++){
+                        // console.log(data.fallbackCards[row])
+                        for (let card = 0; card < data.fallbackCards[row].length; card++){
+                            //console.log(data.fallbackCards[row][card])
+                            let cardDiv = document.createElement("div");
+                            cardDiv.classList.add("cards", "card", "center");
+                            cardDiv.value = data.fallbackCards[row][card].id;
+                            let cardLabel = document.createElement("h6");
+                            cardLabel.innerText = `${data.fallbackCards[row][card].name} | ${data.fallbackCards[row][card].setName}`;
+                            cardLabel.value = data.fallbackCards[row][card].id;
+                            cardLabel.cardName = data.fallbackCards[row][card].name;
+                            cardLabel.onclick = addCard;
+                            cardDiv.appendChild(cardLabel);
+                            let cardImg = document.createElement("img");
+                            cardImg.setAttribute("src", data.fallbackCards[row][card].images.large);
+                            cardImg.value = data.fallbackCards[row][card].id;
+                            cardImg.cardName = data.fallbackCards[row][card].name;
+                            cardImg.onclick = addCard;
+                            //cardDiv.onclick = addCard;
+                            cardDiv.appendChild(cardImg);
+                            CardDiv.appendChild(cardDiv);
+                        }
                     }
+                } else {
+                    showError("There are no cards returned to show.");
                 }
+            } else {
+                showError(data.err);
             }
         })
     } else {
@@ -187,28 +189,19 @@ window.onload = () => {
     const accBtn = document.getElementById("actAdd");
     const e = document.getElementById("variantLabel");
     accBtn.onclick = (eee) => {
-        console.log(e.value, eee.target.value);
-        fetch(`${baseURL}/addCard`, {
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json, text/plain'
-            },
-            method: 'PUT',
-            cache: 'no-cache',
-            redirect: 'follow',
-            body: JSON.stringify({
+        //console.log(e.value, eee.target.value);
+        putJSON(`${baseURL}/addCard`,
+            JSON.stringify({
                 id: eee.target.value,
                 variant: e.value,
                 quantity: Number.parseInt(document.getElementById("qtyText").value)
             })
-        }).then((dat) => {
-            return dat.json();
-        }).then((dat) => {
-            console.log(dat.success);
+        ).then((dat) => {
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('variantSelectModal'), {}).hide();
+            //console.log(dat.success);
             if (dat.success === true){
-                console.log("hide");
-                const varSelect = bootstrap.Modal.getOrCreateInstance(document.getElementById('variantSelectModal'), {});
-                varSelect.hide();
+                //console.log("hide");
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('variantSelectModal'), {}).hide();
                 const iframe = document.getElementById("view");
                 iframe.src = `${baseURL}/viewNoNav`;
                 clearPhoto();
@@ -217,7 +210,7 @@ window.onload = () => {
                 let detCardLabel = document.getElementById("detectedCardLabel");
                 detCardLabel.innerText = "No Card Detected";
             } else {
-                console.log(dat);
+                showError(dat.err);
             }
         });
     };
