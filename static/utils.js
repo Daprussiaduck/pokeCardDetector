@@ -48,8 +48,6 @@ export function showError(errorMsg){
 
 function addNewDB(){
     let name = document.getElementById("txtDBName").value;
-    // let name = window.prompt("What whould you like the new database file to be named?");
-    //console.log(name);
     if (name != null && name != ""){
         postJSON(`${window.location.origin}/changeDB`, JSON.stringify({
             name: name,
