@@ -73,6 +73,8 @@ const deleteCard = (e) => {
         })).then((resp) => {
             if (resp['success'] == true){
                 loadDB();
+            } else {
+                showError(resp['err']);
             }
         });
     }
@@ -91,6 +93,8 @@ const incCard = (e) => {
     })).then((resp) => {
         if (resp['success'] == true){
             loadDB();
+        } else {
+            showError(resp['err']);
         }
     });
 };
@@ -108,6 +112,8 @@ const decCard = (e) => {
     })).then((resp) => {
         if (resp['success'] == true){
             loadDB();
+        } else {
+            showError(resp['err']);
         }
     });
 };
