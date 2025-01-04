@@ -8,6 +8,7 @@ let canvas = null;
 let photo = null;
 let startButton = null;
 
+// Clears the photo that was shown and sent to the detector
 const clearPhoto = () => {
     const context = canvas.getContext("2d");
     context.fillStyle = "#AAA";
@@ -16,14 +17,13 @@ const clearPhoto = () => {
     photo.setAttribute("src", data);
 }
 
+// Adds all of the cameras available to the select camera element, must be called after camera is initalized
 const enumerateCameras = () => {
     const cameraSelect = document.getElementById("cameraSelect");
     cameraSelect.innerHTML = "";
     navigator.mediaDevices.enumerateDevices().then((devices) => {
-        //console.log('Available input and output devices:', devices);
         devices.forEach((device) => {
             if (device.kind === "videoinput") {
-                //console.log(`Video Device: ${device.deviceId}`);
                 const a = document.createElement("a");
                 a.classList.add("dropdown-item");
                 a.value = device.deviceId;
@@ -39,6 +39,7 @@ const enumerateCameras = () => {
     });
 };
 
+// Switches the camera input to the selected one
 const switchCamera = (camera) => {
     video = document.getElementById('video');
     canvas = document.getElementById('canvas');
@@ -62,13 +63,10 @@ const switchCamera = (camera) => {
     });
 };
 
+// Called when a detected card is clicked
+// Then asks for variant and Qty in a modal, which will then actually add to the database
 const addCard = (e) => {
-    // console.log(e.target.value)
-    // fetch(`${baseURL}/versions/${e.target.value}`).then((data) => {
-    //     return data.json();
-    // })
     getJSON(`${baseURL}/versions/${e.target.value}`).then((data) => {
-        // console.log(data);
         const list = document.getElementById("variantSelect");
         list.innerHTML = "";
         console.log(data);
@@ -81,7 +79,7 @@ const addCard = (e) => {
             a.innerText = data[i];
             const actAddButton = document.getElementById("actAdd");
             actAddButton.value = e.target.value;
-            a.onclick = (ee) => {
+            a.onclick = (ee) => { // When the Add button in the modal is clicked
                 const label = document.getElementById("variantLabel");
                 label.innerText = `Variant Selected: ${ee.target.value}`;
                 label.value = ee.target.value;
@@ -99,6 +97,7 @@ const addCard = (e) => {
     });
 };
 
+// Take a snapshot of the webcam feed and send it to the detector to be looked at
 const takePicture = () => {
     let CardDiv = document.getElementById("detectedCardsDiv");
     CardDiv.innerHTML = "";
@@ -111,21 +110,17 @@ const takePicture = () => {
         context.drawImage(video, 0, 0, width, height);
         const data = canvas.toDataURL("image/png");
         photo.setAttribute("src", data);
-        //console.log(video.srcObject)
+
         postJSON(`${baseURL}/detect`,
             JSON.stringify({
                 imgData: data
             })
-        ).then((data) => { // TODO: Add success check
-            // console.log(data)
+        ).then((data) => {
             if (typeof data.success != "undefined" && data.success == true){
                 if (data.detectedCard && data.fallbackCards.length >= 1){
-                    // console.log(`${data.detectedCard.name} from ${data.detectedCard.set}`)
                     detCardLabel.innerText = `Detected: ${data.detectedCard.name} from: ${data.detectedCard.set}`;
                     for (let row = 0; row < data.fallbackCards.length; row++){
-                        // console.log(data.fallbackCards[row])
                         for (let card = 0; card < data.fallbackCards[row].length; card++){
-                            //console.log(data.fallbackCards[row][card])
                             let cardDiv = document.createElement("div");
                             cardDiv.classList.add("cards", "card", "center");
                             cardDiv.value = data.fallbackCards[row][card].id;
@@ -140,7 +135,6 @@ const takePicture = () => {
                             cardImg.value = data.fallbackCards[row][card].id;
                             cardImg.cardName = data.fallbackCards[row][card].name;
                             cardImg.onclick = addCard;
-                            //cardDiv.onclick = addCard;
                             cardDiv.appendChild(cardImg);
                             CardDiv.appendChild(cardDiv);
                         }
@@ -157,6 +151,7 @@ const takePicture = () => {
     }
 }
 
+// Sets up the camera to take pictures of cards
 const setupCamera = () => {
     switchCamera();
     video.addEventListener("canplay", (ev) => {
@@ -180,6 +175,7 @@ const setupCamera = () => {
     clearPhoto();
 };
 
+// When the window loads
 window.onload = () => {
     baseURL = window.location.origin;
     modifyNavBar(baseURL, editDB, viewDB);
@@ -189,7 +185,6 @@ window.onload = () => {
     const accBtn = document.getElementById("actAdd");
     const e = document.getElementById("variantLabel");
     accBtn.onclick = (eee) => {
-        //console.log(e.value, eee.target.value);
         putJSON(`${baseURL}/addCard`,
             JSON.stringify({
                 id: eee.target.value,
@@ -198,10 +193,7 @@ window.onload = () => {
             })
         ).then((dat) => {
             bootstrap.Modal.getOrCreateInstance(document.getElementById('variantSelectModal'), {}).hide();
-            //console.log(dat.success);
             if (dat.success === true){
-                //console.log("hide");
-                bootstrap.Modal.getOrCreateInstance(document.getElementById('variantSelectModal'), {}).hide();
                 const iframe = document.getElementById("view");
                 iframe.src = `${baseURL}/viewNoNav`;
                 clearPhoto();
