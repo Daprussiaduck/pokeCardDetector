@@ -1,4 +1,4 @@
-import {getJSON, postJSON, putJSON, modifyNavBar, viewDB, editDB} from "./utils.js"
+import {getJSON, postJSON, putJSON, modifyNavBar, viewDB, editDB, showError} from "./utils.js"
 
 let baseURL = "";
 
@@ -68,7 +68,7 @@ const reloadDBs = () => {
                 dbTable.appendChild(dbRow);
             }
         } else {
-            console.error("No DataBases returned from server.");
+            showError("No DataBases returned from server.");
         }
     })
 }

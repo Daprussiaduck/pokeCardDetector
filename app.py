@@ -1,18 +1,18 @@
 from detect import CardDetector
 from PIL import Image
 import numpy as np
-import base64
+#import base64
 import flask
 import cv2
-import io
-import os
+#import io
+#import os
 
 app = flask.Flask(__name__)
 detector = CardDetector()
 
-def stringToImage(base64_string):
-    imgdata = base64.b64decode(base64_string)
-    return Image.open(io.BytesIO(imgdata))
+# def stringToImage(base64_string):
+#     imgdata = base64.b64decode(base64_string)
+#     return Image.open(io.BytesIO(imgdata))
 
 @app.route("/test")
 def test():

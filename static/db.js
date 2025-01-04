@@ -1,5 +1,80 @@
-import {getJSON, postJSON, putJSON, modifyNavBar, viewDB, editDB} from "./utils.js"
+import {getJSON, postJSON, putJSON, modifyNavBar, viewDB, editDB, showError} from "./utils.js"
 let baseURL = "";
+
+const sortTable = (index, reverse) => {
+    const tableRows = Array.from(document.getElementById("dataTable").children);
+    let newRows = [];
+
+    newRows = tableRows.sort((a, b) => {
+        if (reverse){
+            return Array.from(a.children)[index].innerHTML < Array.from(b.children)[index].innerHTML;
+        }
+        return Array.from(a.children)[index].innerHTML > Array.from(b.children)[index].innerHTML;
+    });
+
+    console.log(newRows);
+
+    document.getElementById("dataTable").innerHTML = "";
+    newRows.forEach((row) => {
+        document.getElementById("dataTable").appendChild(row);
+    });   
+}
+
+const sortDB = (e) => {
+    const sortType = e.target.innerHTML;
+    let reverse = false;
+    if (typeof e.target.value != "undefined" && e.target.value == "normal"){
+        e.target.value = "reverse";
+        reverse = true;
+    } else {
+        e.target.value = "normal";
+    }
+    switch (sortType){
+        case "DB":
+            //console.log("sort by DB");
+            sortTable(0, reverse);
+            break;
+        case "Card":
+            //console.log("sort by Card");
+            sortTable(1, reverse);
+            break;
+        case "Name":
+            //console.log("sort by Name");
+            sortTable(2, reverse);
+            break;
+        case "Variant":
+            //console.log("sort by Variant");
+            sortTable(3, reverse);
+            break;
+        case "Quantity":
+            //console.log("sort by Quantity");
+            sortTable(4, reverse);
+            break;
+        case "Inc/Dec":
+            //console.log("Dont fucking sort by this");
+            // sortTable(5);
+            showError("I refuse to sort by button");
+            break;
+        case "Total Estimated Cost":
+            //console.log("sort by cost");
+            //console.log(reverse);
+            sortTable(6, reverse);
+            break;
+        case "Card ID":    
+            //console.log("sort by Card ID");
+            sortTable(7, reverse);
+            break;
+        case "Time Added":
+            //console.log("sort by Time Added");
+            sortTable(8, reverse);
+            break;
+        case "Delete?":
+            //console.log("Fuck you");
+            // sortTable(9);
+            showError("Trash is Trash");
+            break;
+    };
+};
 
 const deleteCard = (e) => {
     const tr = e.target.parentElement.parentElement;
@@ -24,7 +99,7 @@ const deleteCard = (e) => {
         }).then((data) => {
             return data.json();
         }).then((resp) => {
-            console.log(resp);
+            // console.log(resp);
             if (resp['success'] == true){
                 loadDB();
             }
@@ -39,7 +114,7 @@ const incCard = (e) => {
     let quantity = Number.parseInt(Array.from(tr.children)[4].innerText);
     // console.log(cardID, variant, quantity);
     quantity++;
-    console.log(cardID, variant, quantity);
+    // console.log(cardID, variant, quantity);
     fetch(`${baseURL}/changeQty`, {
         headers: {
             'Content-Type': 'application/json',
@@ -56,7 +131,7 @@ const incCard = (e) => {
     }).then((data) => {
         return data.json();
     }).then((resp) => {
-        console.log(resp);
+        // console.log(resp);
         if (resp['success'] == true){
             loadDB();
         }
@@ -70,7 +145,7 @@ const decCard = (e) => {
     let quantity = Number.parseInt(Array.from(tr.children)[4].innerText);
     // console.log(cardID, variant, quantity);
     quantity--;
-    console.log(cardID, variant, quantity);
+    // console.log(cardID, variant, quantity);
     fetch(`${baseURL}/changeQty`, {
         headers: {
             'Content-Type': 'application/json',
@@ -87,7 +162,7 @@ const decCard = (e) => {
     }).then((data) => {
         return data.json();
     }).then((resp) => {
-        console.log(resp);
+        // console.log(resp);
         if (resp['success'] == true){
             loadDB();
         }
@@ -99,7 +174,7 @@ const populateTable = (data) => {
     const table = document.getElementById("dataTable");
     table.innerHTML = "";
     const edit = localStorage.getItem("dataEdit");
-    console.log(edit, typeof edit, edit !== "true")
+    // console.log(edit, typeof edit, edit !== "true")
     if (typeof data.db !== "undefined"){ // Single View
         const db = data['db'];
             for (let i = 0; i < db.length; i++){
@@ -154,6 +229,9 @@ const populateTable = (data) => {
                 tr.appendChild(td);
                 td = document.createElement("td");
                 td.innerText = data['db'][i]['id'];
+                tr.appendChild(td);
+                td = document.createElement("td");
+                td.innerText = data['db'][i]['timeAdded'];
                 tr.appendChild(td);
                 td = document.createElement("td");
                 const delButton = document.createElement("button");
@@ -226,6 +304,9 @@ const populateTable = (data) => {
                 td.innerText = data[d]['db'][i]['id'];
                 tr.appendChild(td);
                 td = document.createElement("td");
+                td = document.createElement("td");
+                td.innerText = data[d]['db'][i]['timeAdded'];
+                tr.appendChild(td);
                 const delButton = document.createElement("button");
                 delButton.classList.add('btn', 'btn-danger');
                 delButton.innerText = '🗑️';
@@ -238,6 +319,10 @@ const populateTable = (data) => {
                 table.appendChild(tr);
             }
         }
+    }
+    if (window.location == `${baseURL}/viewNoNav`){
+        //console.log("bjkdsalbnf");
+        sortTable( 8, true);
     }
 };
 
@@ -288,6 +373,10 @@ window.onload = () => {
     if (window.location != `${baseURL}/viewNoNav`){
         modifyNavBar(baseURL, editDB, viewDB);
     }
+    const tableHeaders = document.getElementsByTagName("th");
+    Array.from(tableHeaders).forEach((th) => {
+        th.onclick = sortDB;
+    });
     loadDB();
 };
 

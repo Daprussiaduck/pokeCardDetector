@@ -5,6 +5,7 @@ from PIL import Image
 import pandas as pd
 import numpy as np
 import subprocess
+import datetime
 import requests
 import cv2
 import os
@@ -562,7 +563,8 @@ class CardDetector:
                 "Quantity": [quantity],
                 "variant": [variant],
                 "lastCost": [lastCost],
-                "priceURL": self.getPriceURL(cardID)
+                "priceURL": self.getPriceURL(cardID),
+                "timeAdded": datetime.datetime.now()
             })
             self.addDB.set_index(['index'], inplace=True)
             self.addDB.to_excel(self.DBPath)
@@ -584,7 +586,8 @@ class CardDetector:
                 "Quantity": [quantity],
                 "variant": [variant],
                 "lastCost": [lastCost],
-                "priceURL": self.getPriceURL(cardID)
+                "priceURL": self.getPriceURL(cardID),
+                "timeAdded": datetime.datetime.now()
             }).set_index(['index'])])
         #self.addDB.set_index(['index'], inplace=True)
         self.addDB.to_excel(self.DBPath)
@@ -614,7 +617,8 @@ class CardDetector:
             "quantity": x['Quantity'],
             "variant": x['variant'],
             "lastCost": x['lastCost'] * x['Quantity'],
-            "priceURL": x['priceURL']
+            "priceURL": x['priceURL'],
+            "timeAdded": x['timeAdded']
         }), axis = 1)
         return {"db": dbArr}
 
