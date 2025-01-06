@@ -1,11 +1,7 @@
 from detect import CardDetector
-from PIL import Image
-import numpy as np
-#import base64
+from pokemontcgsdk import Card
 import flask
 import cv2
-#import io
-#import os
 
 app = flask.Flask(__name__)
 detector = CardDetector()
@@ -175,3 +171,25 @@ def changeQuantity():
     return {
         "success": False,
         "err": "No JSON data found"}
+
+@app.route("/query", methods=["POST"])
+def query():
+    data = flask.request.get_json()
+    if not data is None:
+        if "query" in data.keys():
+            cards = Card.where(q=data['query'])
+            retArr = []
+            for card in cards:
+                retArr.append(detector.getCardJSON(card.id))
+            return {
+                "success": True,
+                "cards": retArr,
+            }
+        return {
+            "success": False,
+            "err": "No Query found in sent request"
+        }
+    return {
+        "success": False,
+        "err": "Nothing was sent",
+    }

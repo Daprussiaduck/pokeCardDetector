@@ -158,6 +158,7 @@ export function modifyNavBar(baseURL, editClickCallback, viewClickCallback){
         li.appendChild(line);
         viewDrop.appendChild(li);
     });
+    document.getElementById("searchButton").onclick = searchCards;
 };
 
 export function viewDB(e){
@@ -200,4 +201,126 @@ export function editDB(e){
     localStorage.setItem("selectedDBALL", false);
     localStorage.setItem("dataEdit", "true");
     window.location = `${window.location.origin}/view`
+}
+
+export function searchCards(e){
+    const accBtn = document.getElementById("actAdd");
+    const varLbl = document.getElementById("variantLabel");
+    accBtn.onclick = (eee) => {
+        putJSON(`${window.location.origin}/addCard`,
+            JSON.stringify({
+                id: eee.target.value,
+                variant: varLbl.value,
+                quantity: Number.parseInt(document.getElementById("qtyText").value)
+            })
+        ).then((dat) => {
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('variantSelectModal'), {}).hide();
+            if (dat.success === true){
+                //const iframe = document.getElementById("view");
+                //iframe.src = `${baseURL}/viewNoNav`;
+                //clearPhoto();
+                //let CardDiv = document.getElementById("detectedCardsDiv");
+                //CardDiv.innerHTML = "";
+                //let detCardLabel = document.getElementById("detectedCardLabel");
+                //detCardLabel.innerText = "No Card Detected";
+            } else {
+                showError(dat.err);
+            }
+        });
+    };
+    const query = document.getElementById("searchBox").value;
+    console.log(query);
+    postJSON(`${window.location.origin}/query`, JSON.stringify({
+        query: query
+    })).then((data) => {
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('manualAddModal'), {}).hide();
+        if (data.success == true){
+            console.log(data.cards);
+            const CardDiv = document.getElementById("manualAddDiv");
+            for (let i = 0; i < data.cards.length; i++){
+                let cardDiv = document.createElement("div");
+                cardDiv.classList.add("cards", "card", "center");
+                cardDiv.value = data.cards[i].id;
+                let cardLabel = document.createElement("h6");
+                cardLabel.innerText = `${data.cards[i].name} | ${data.cards[i].set.name}`;
+                cardLabel.value = data.cards[i].id;
+                cardLabel.cardName = data.cards[i].name;
+                cardLabel.onclick = (e) => {
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('manualAddModal'), {}).hide();
+                    getJSON(`${window.location.origin}/versions/${e.target.value}`).then((data) => {
+                        const list = document.getElementById("variantSelect");
+                        list.innerHTML = "";
+                        console.log(data);
+                        console.log(typeof data)
+                        for(let i = 0; i < data.length; i++){
+                            const li = document.createElement("li");
+                            const a = document.createElement("a");
+                            a.classList.add("dropdown-item");
+                            a.value = data[i];
+                            a.innerText = data[i];
+                            const actAddButton = document.getElementById("actAdd");
+                            actAddButton.value = e.target.value;
+                            a.onclick = (ee) => { // When the Add button in the modal is clicked
+                                const label = document.getElementById("variantLabel");
+                                label.innerText = `Variant Selected: ${ee.target.value}`;
+                                label.value = ee.target.value;
+                                const addButton = document.getElementById("actAdd");
+                                addButton.disabled = false;
+                            };
+                            li.appendChild(a);
+                            //cameraSelect.appendChild(li);
+                            list.appendChild(li);
+                        }
+                        bootstrap.Modal.getOrCreateInstance(document.getElementById('variantSelectModal'), {}).show();
+                    }).catch((err) => {
+                        bootstrap.Modal.getOrCreateInstance(document.getElementById('variantSelectModal'), {}).hide();
+                        showError(err);
+                    });
+                };
+                cardDiv.appendChild(cardLabel);
+                let cardImg = document.createElement("img");
+                cardImg.setAttribute("src", data.cards[i].images.large);
+                cardImg.value = data.cards[i].id;
+                cardImg.cardName = data.cards[i].name;
+                cardImg.onclick = (e) => {
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('manualAddModal'), {}).hide();
+                    getJSON(`${window.location.origin}/versions/${e.target.value}`).then((data) => {
+                        const list = document.getElementById("variantSelect");
+                        list.innerHTML = "";
+                        console.log(data);
+                        console.log(typeof data)
+                        for(let i = 0; i < data.length; i++){
+                            const li = document.createElement("li");
+                            const a = document.createElement("a");
+                            a.classList.add("dropdown-item");
+                            a.value = data[i];
+                            a.innerText = data[i];
+                            const actAddButton = document.getElementById("actAdd");
+                            actAddButton.value = e.target.value;
+                            a.onclick = (ee) => { // When the Add button in the modal is clicked
+                                const label = document.getElementById("variantLabel");
+                                label.innerText = `Variant Selected: ${ee.target.value}`;
+                                label.value = ee.target.value;
+                                const addButton = document.getElementById("actAdd");
+                                addButton.disabled = false;
+                            };
+                            li.appendChild(a);
+                            //cameraSelect.appendChild(li);
+                            list.appendChild(li);
+                        }
+                        bootstrap.Modal.getOrCreateInstance(document.getElementById('variantSelectModal'), {}).show();
+                    }).catch((err) => {
+                        bootstrap.Modal.getOrCreateInstance(document.getElementById('variantSelectModal'), {}).hide();
+                        showError(err);
+                    });
+                };
+                cardDiv.appendChild(cardImg);
+                CardDiv.appendChild(cardDiv);
+            }
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('manualAddModal'), {}).show();
+        } else {
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('manualAddModal'), {}).hide();
+            showError(data.err);
+        }
+    });
 }

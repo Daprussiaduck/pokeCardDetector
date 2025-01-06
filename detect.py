@@ -5,9 +5,9 @@ import imagehash as ih
 from PIL import Image
 import pandas as pd
 import numpy as np
-import subprocess
 import datetime
 import requests
+import base64
 import math
 import cv2
 import os
@@ -413,6 +413,7 @@ class CardDetector:
                 ret[key] = {
                     'small': card.at[cardID, key].small,
                     'large': card.at[cardID, key].large,
+                    #"large": self.imgToBase64(card)
                 }
         #print(ret)
         return ret
@@ -428,7 +429,8 @@ class CardDetector:
         card = self.getCard(cardID)
         if len(card) != 1:
             return ["ID " + cardID + " returned multiple cards, this should not happen"]
-        if card.iloc[0].tcgplayer.prices == None: # this should only be for energies
+        print(card.iloc[0].tcgplayer.prices)
+        if card.iloc[0].tcgplayer.prices is None: # this should only be for energies
             return ["normal", "holofoil", "reverseHolofoil"]
         priceInfo = card.iloc[0].tcgplayer.prices
         versions = []
@@ -442,6 +444,8 @@ class CardDetector:
             versions.append("firstEditionHolofoil")
         if not priceInfo.firstEditionNormal is None:
             versions.append("firstEditionNormal")
+        if not versions: # fucking some 1st gen cards fuck off
+            return ["normal", "holofoil", "reverseHolofoil"]
         return versions
 
     def getCardPrice(self, cardID, version='normal', force=False):
@@ -460,10 +464,16 @@ class CardDetector:
             card = self.cardsDF[self.cardsDF['id'] == cardID]
         priceInfo = card.iloc[0].tcgplayer.prices
         if version == "normal":
+            if priceInfo.normal is None:
+                return 0
             return priceInfo.normal.market
         if version == "holofoil":
+            if priceInfo.holofoil is None:
+                return 0
             return priceInfo.holofoil.market
         if version == "reverseHolofoil":
+            if priceInfo.reverseHolofoil is None:
+                return 0
             return priceInfo.reverseHolofoil.market
         if version == "firstEditionHolofoil":
             return priceInfo.firstEditionHolofoil.market
@@ -576,6 +586,13 @@ class CardDetector:
         self.addDB.at[card, 'lastCost'] = lastCost
         self.addDB.to_excel(self.DBPath)
 
+    def imgToBase64(self, card):
+        imgPath = os.path.join(self.ImagesDir, card['set'].series, card['set'].name, card['id'] + " (" + card['name'] + ").png")
+        if os.path.exists(imgPath):
+            with open(imgPath, 'rb') as fd:
+                return "data:image/png;base64," + base64.encodebytes(fd.read()).decode()
+        return card['images'].large
+
     def getAddDB(self, updatePriceForce=False):
         if self.DBPath is None or self.DBPath == "":
             return {
@@ -589,7 +606,8 @@ class CardDetector:
         self.addDB.apply(lambda x: dbArr.append({
             "id": x['id'],
             "name": self.cardsDF.at[x['id'], 'name'],
-            "img": self.cardsDF.at[x['id'], 'images'].large, 
+            "img": self.cardsDF.at[x['id'], 'images'].large,
+            #"img": self.imgToBase64(self.cardsDF[self.cardsDF['id'] == x['id']].iloc[0]), 
             "quantity": x['Quantity'],
             "variant": x['variant'],
             "lastCost": x['lastCost'] * x['Quantity'],
