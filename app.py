@@ -10,10 +10,6 @@ import cv2
 app = flask.Flask(__name__)
 detector = CardDetector()
 
-# def stringToImage(base64_string):
-#     imgdata = base64.b64decode(base64_string)
-#     return Image.open(io.BytesIO(imgdata))
-
 @app.route("/test")
 def test():
     return flask.render_template('test.html')

@@ -17,7 +17,7 @@ const clearPhoto = () => {
     photo.setAttribute("src", data);
 }
 
-// Adds all of the cameras available to the select camera element, must be called after camera is initalized
+// Adds all of the cameras available to the select camera element, must be called after camera is initialized
 const enumerateCameras = () => {
     const cameraSelect = document.getElementById("cameraSelect");
     cameraSelect.innerHTML = "";

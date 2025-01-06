@@ -144,22 +144,22 @@ const tablePopulation = (element, dbName) => {
     td = document.createElement("td");
     const pmDiv = document.createElement("div");
     pmDiv.classList.add("d-flex", "flex-nowrap", "gap-2", "justify-content-center");
-    const incQuanButton = document.createElement("button");
-    incQuanButton.classList.add("btn", "btn-primary");
-    incQuanButton.onclick = incCard;
-    incQuanButton.innerText = "+";
+    const incQuantityButton = document.createElement("button");
+    incQuantityButton.classList.add("btn", "btn-primary");
+    incQuantityButton.onclick = incCard;
+    incQuantityButton.innerText = "+";
     if (edit !== "true"){
-        incQuanButton.disabled = true;
+        incQuantityButton.disabled = true;
     }
-    pmDiv.appendChild(incQuanButton);
-    const decQuanButton = document.createElement("button");
-    decQuanButton.classList.add("btn", "btn-secondary");
-    decQuanButton.onclick = decCard;
-    decQuanButton.innerText = "-";
+    pmDiv.appendChild(incQuantityButton);
+    const decQuantityButton = document.createElement("button");
+    decQuantityButton.classList.add("btn", "btn-secondary");
+    decQuantityButton.onclick = decCard;
+    decQuantityButton.innerText = "-";
     if (edit !== "true"){
-        decQuanButton.disabled = true;
+        decQuantityButton.disabled = true;
     }
-    pmDiv.appendChild(decQuanButton);
+    pmDiv.appendChild(decQuantityButton);
     td.appendChild(pmDiv);
     tr.appendChild(td);
     td = document.createElement("td");

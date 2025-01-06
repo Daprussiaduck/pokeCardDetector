@@ -96,7 +96,7 @@ class CardDetector:
             setsDF.apply(lambda x: self.loadSet(x), axis = 1)
         imgHashColName = "hash_" + str(self.hashSize) + ":" + str(self.numFreq)
         imgDF = pd.read_pickle(os.path.join(self.CacheDir, "imgDF.pkl"))
-        imgDF.apply(lambda x: self.applyHashtoCardsDF(x['id'], x[imgHashColName]), axis = 1)
+        imgDF.apply(lambda x: self.applyHashToCardsDF(x['id'], x[imgHashColName]), axis = 1)
         #self.cardsDF['hash'] = imgDF[self.cardsDF['id'] == imgDF['id']][imgHashColName]
 
     def loadSet(self, set):
@@ -104,14 +104,13 @@ class CardDetector:
         imgHashColName = "hash_" + str(self.hashSize) + ":" + str(self.numFreq)
         imgDF = None if not os.path.exists(os.path.join(self.CacheDir, "imgDF.pkl")) else pd.read_pickle(os.path.join(self.CacheDir, "imgDF.pkl"))
         setDF = pd.read_pickle(os.path.join(self.CacheDir, "Sets", set['id'] + "_IMG.pkl"))
-        #setDF.apply(lambda x: self.applyHashtoCardsDF(x['id'], x[imgHashColName]), axis = 1)
         if imgDF is None:
             imgDF = setDF
         else:
             imgDF = pd.concat([imgDF, setDF]).drop_duplicates(['id'], keep="last")
         imgDF.to_pickle(os.path.join(self.CacheDir, "imgDF.pkl"))
         
-    def applyHashtoCardsDF(self, id, hashValue):
+    def applyHashToCardsDF(self, id, hashValue):
         self.cardsDF.at[id, 'hash'] = hashValue
         self.cardsDF.at[id, 'hash_diff'] = hashValue
 

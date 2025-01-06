@@ -89,10 +89,10 @@ export function modifyNavBar(baseURL, editClickCallback, viewClickCallback){
     const viewDrop = document.getElementById("dropDownView");
     viewDrop.innerHTML = "";
 
-    // Make the button in the add new DB modal actuall request a new DB be made
+    // Make the button in the add new DB modal actual request a new DB be made
     document.getElementById("btnMakeDB").onclick = addNewDB;
 
-    // Get the list of databases from the servber and populate the list in the nav bar
+    // Get the list of databases from the server and populate the list in the nav bar
     getJSON(`${window.location.origin}/DBs`).then((data) => {
         if (typeof data.success == "undefined" || data.success == false){
             showError(data.err);
