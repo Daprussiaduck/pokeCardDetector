@@ -210,13 +210,16 @@ const populateTable = (data) => {
 const loadDB = () => {
     const allDBs = localStorage.getItem("selectedDBALL");
     const dbName = localStorage.getItem("selectedDB");
+    const updatePrice = localStorage.getItem("priceUpdate");
+    localStorage.setItem("priceUpdate", "false");
     if (allDBs === "true"){
     postJSON(`${baseURL}/viewDB`, JSON.stringify({})).then((data) => {
             populateTable(data);
         });
     } else {
         postJSON(`${baseURL}/viewDB`, JSON.stringify({
-            name: dbName
+            name: dbName,
+            forceUpdate: updatePrice == "true",
         })).then((data) => {
             populateTable(data);
         });

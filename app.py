@@ -102,7 +102,10 @@ def viewDB():
                     "success": False,
                     "err": "Database specified doesn't exist"
                 }
-            return detector.getAddDB()
+            upd = False
+            if 'forceUpdate' in data.keys():
+                upd = data['forceUpdate']
+            return detector.getAddDB(upd)
         else:
             dbList = detector.getDBList()
             ret = {}

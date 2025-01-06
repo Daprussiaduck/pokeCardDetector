@@ -445,12 +445,20 @@ class CardDetector:
             versions.append("firstEditionNormal")
         return versions
 
-    def getCardPrice(self, cardID, version='normal'):
+    def getCardPrice(self, cardID, version='normal', force=False):
         card = self.cardsDF[self.cardsDF['id'] == cardID]
         if len(card) != 1:
             return ["ID " + cardID + " returned multiple cards, this should not happen"]
         if card.iloc[0].tcgplayer.prices == None: # this should only be for energies
             return 0.0
+        dat = datetime.datetime.strptime(card.iloc[0].tcgplayer.updatedAt, "%Y/%m/%d").date()
+        delta = datetime.timedelta(days = 14)
+        today = datetime.date.today()
+        if dat <= today - delta or force:
+            print("updating price")
+            newCard = Card.find(cardID).tcgplayer
+            self.cardsDF.at[cardID, 'tcgplayer'] = newCard
+            card = self.cardsDF[self.cardsDF['id'] == cardID]
         priceInfo = card.iloc[0].tcgplayer.prices
         if version == "normal":
             return priceInfo.normal.market
@@ -562,14 +570,14 @@ class CardDetector:
         self.addDB.to_excel(self.DBPath)
         return {"success": True}
     
-    def updatePrice(self, cardID, variant):
+    def updatePrice(self, cardID, variant, updatePriceForce=False):
         card = self.addDB.loc[(self.addDB['id'] == cardID) & (self.addDB['variant'] == variant)].index.item()
         #print(card)
-        lastCost = self.getCardPrice(cardID, variant)
+        lastCost = self.getCardPrice(cardID, variant, updatePriceForce)
         self.addDB.at[card, 'lastCost'] = lastCost
         self.addDB.to_excel(self.DBPath)
 
-    def getAddDB(self):
+    def getAddDB(self, updatePriceForce=False):
         if self.DBPath is None or self.DBPath == "":
             return {
                 "success": False,
@@ -577,7 +585,7 @@ class CardDetector:
                 }
         if self.addDB is None:
             return {"db": []}
-        self.addDB.apply(lambda x: self.updatePrice(x['id'], x['variant']), axis = 1)
+        self.addDB.apply(lambda x: self.updatePrice(x['id'], x['variant'], updatePriceForce), axis = 1)
         dbArr = []
         self.addDB.apply(lambda x: dbArr.append({
             "id": x['id'],

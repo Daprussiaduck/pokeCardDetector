@@ -27,6 +27,20 @@ const deleteDB = (e) => {
     });
 };
 
+const updatePrices = (e) => {
+    const tr = e.target.parentElement.parentElement;
+    const trName = Array.from(tr.children)[0].innerText;
+    // console.log(`Request to view: ${trName}`);
+    const selectedDBLabel = document.getElementById("navDatabaseSelected");
+    selectedDBLabel.innerText = `Database Selected: ${trName}`;
+    localStorage.setItem("selectedDB", trName);
+    localStorage.setItem("selectedDBALL", false);
+    localStorage.setItem("dataEdit", "false");
+    localStorage.setItem("priceUpdate", "true");
+    window.location = `${window.location.origin}/view`
+};
+
+
 const reloadDBs = () => {
     const dbTable = document.getElementById("databases");
     dbTable.innerHTML = "";
@@ -62,6 +76,14 @@ const reloadDBs = () => {
                 dbView.onclick = viewDB;
                 dbView.innerText = "View";
                 dbData.appendChild(dbView);
+                dbRow.appendChild(dbData);
+                dbData = document.createElement("td");
+                dbData.innerText = "";
+                let dbUpd = document.createElement("button");
+                dbUpd.classList.add('btn', 'btn-outline-info');
+                dbUpd.onclick = updatePrices;
+                dbUpd.innerText = "Update Prices";
+                dbData.appendChild(dbUpd);
                 dbRow.appendChild(dbData);
                 dbData = document.createElement("td");
                 let dbDelete = document.createElement("button");
