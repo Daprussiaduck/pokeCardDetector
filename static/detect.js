@@ -125,7 +125,7 @@ const takePicture = () => {
                             cardDiv.classList.add("cards", "card", "center");
                             cardDiv.value = data.fallbackCards[row][card].id;
                             let cardLabel = document.createElement("h6");
-                            cardLabel.innerText = `${data.fallbackCards[row][card].name} | ${data.fallbackCards[row][card].setName}`;
+                            cardLabel.innerText = `${data.fallbackCards[row][card].name} | ${data.fallbackCards[row][card].set.name}`;
                             cardLabel.value = data.fallbackCards[row][card].id;
                             cardLabel.cardName = data.fallbackCards[row][card].name;
                             cardLabel.onclick = addCard;

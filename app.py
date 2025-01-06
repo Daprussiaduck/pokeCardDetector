@@ -37,10 +37,11 @@ def detectCard():
             if len(detCards) > 0:
                 for d in detCards:
                     troll = []
-                    print(fallbackCards[d])
+                    # print(fallbackCards[d])
                     for fall in fallbackCards[d].index:
                         troll.append(detector.getCardJSON(fall))
                     fallCards.append(troll)
+                    # print(fallCards)
                 return {
                     "success": True,
                     "detectedCard": {

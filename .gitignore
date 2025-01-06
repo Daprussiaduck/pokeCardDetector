@@ -1,9 +1,11 @@
 __pycache__
 .vscode
 CardCache
+CardCache2
 CardImages
 CardDBs
 pokemon-tcg-data
 test.key
 test.pem
 test.pfx
+**.OLD

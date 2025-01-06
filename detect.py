@@ -1,4 +1,5 @@
 from pokemontcgsdk import Card
+from pokemontcgsdk import Set
 import multiprocessing as mp
 import imagehash as ih
 from PIL import Image
@@ -7,6 +8,7 @@ import numpy as np
 import subprocess
 import datetime
 import requests
+import math
 import cv2
 import os
 
@@ -16,7 +18,7 @@ class CardDetector:
     Able to be fine tuned, but most parameters are ok for detection by default.
     """
 
-    def __init__(self, dataDir='./pokemon-tcg-data', imageDir='./CardImages', cacheDir='./CardCache', dbDir="./CardDBs", hashSize = 64, numFreq=16, cThresh=5, sizeThresh=10000, kernelSize=(3,3)):
+    def __init__(self, imageDir='./CardImages', cacheDir='./CardCache', dbDir="./CardDBs", hashSize = 64, numFreq=16, cThresh=5, sizeThresh=10000, kernelSize=(3,3)):
         """
         Initializes the Card Detector, able to modify most internal values if desired.
         dataDir: Directory in which the git repo (https://github.com/PokemonTCG/pokemon-tcg-data) will be locally cloned [Default: './pokemon-tcg-data']
@@ -28,201 +30,156 @@ class CardDetector:
         sizeThresh: The threshold for the size of the card to detect [Default: 10000]
         kernelSize: The size of the kernel to detect with [Default: (3, 3)]
         """
-        self.tcgDataDir = dataDir
+        # Caching Directories
         self.ImagesDir = imageDir
         self.CacheDir = cacheDir
+        # Database Directory/path and object to "store" it
         self.DBDir = dbDir
+        self.DBPath = None
+        self.addDB = None
+        # Parameters of the Card Detection Algorithm
         self.hashSize = hashSize
         self.numFreq = numFreq
         self.cThresh = cThresh
         self.sizeThresh = sizeThresh
         self.kernelSize = kernelSize
-        self.DBPath = None
-        self.addDB = None
-        self.loadDB()
+        # Load in the data (update the cache, and the load the cache)
+        self.cardsDF = None
+        if os.path.exists(os.path.join(self.CacheDir, "cardsDF.pkl")):
+            self.cardsDF = pd.read_pickle(os.path.join(self.CacheDir, "cardsDF.pkl"))
+        self.updateSets()
+        print("sets updated")
+        self.loadSets()
+        print('sets loaded')
+        print("ready to detect")
 
-    def updateGit(self):
-        """
-        Updates the git repo, and returns True if it was updated, False if not updated
-        """
-        pwd = os.getcwd()
-        if not os.path.exists(self.tcgDataDir):
-            proc = subprocess.Popen(["git clone https://github.com/PokemonTCG/pokemon-tcg-data.git", self.tcgDataDir], shell=True)
-            retVal = proc.wait()
-        else:
-            os.chdir(self.tcgDataDir)
-            proc = subprocess.Popen("git pull", shell = True, stdout=subprocess.PIPE)
-            retVal = proc.wait()
-            output = proc.stdout.read()
-            os.chdir(pwd)
-            if output == b'Already up to date.\n':
-                return False
-        return True
-
-    def loadDB(self):
-        """
-        Loads the database from last known into memory.
-        Also updates the database if necessary.
-        """
-        if not os.path.exists(self.CacheDir): # check if the cache directory exists, if not make it
-            os.makedirs(self.CacheDir)
-        if self.updateGit() or not os.path.exists(os.path.join(self.CacheDir, 'CardsDF.pkl')): # if Updated or not found
-            # Update and save Set information
-            self.setsDF = pd.read_json(os.path.join(self.tcgDataDir, "sets", "en.json"))
-            self.setsDF.set_index('id', inplace=True)
-            self.setsDF.to_pickle(os.path.join(self.CacheDir, 'SetsDF.pkl'))
-            self.cardsDF = None
-            self.imgDF = None
-            for (root, dirs, files) in os.walk(os.path.join(self.tcgDataDir, "cards", "en")):
-                numSets = len(files)
-                i = 0
-                for file in files: # for each set file found
-                    i = i + 1
-                    setID = file.split(".json")[0]
-                    print("Starting update of:", setID, "set", i, "of", numSets)
-                    # Grab set info, add to a dataframe
-                    path = os.path.join(root, file)
-                    setDF = pd.read_json(path)
-                    setDF.set_index('id', inplace=True, drop=False)
-                    setDF['setID'] = file.split(".json")[0]
-                    setDF['setSeries'] = self.setsDF.loc[setID, 'series']
-                    setDF['setName'] = self.setsDF.loc[setID, 'name']
-                    # check if an older version exists
-                    if os.path.exists(os.path.join(self.CacheDir, 'sets', setID + '.pkl')):
-                        old = pd.read_pickle(os.path.join(self.CacheDir, 'sets', setID + '.pkl'))
-                        if not old.equal(setDF):
-                            # if it does and they are not the same, update
-                            setDF.to_pickle(os.path.join(self.CacheDir, 'sets', setID + '.pkl'))
-                            self.updateImages(setID, setDF)
-                    # If first set we are adding, add only it
-                    if self.cardsDF is None:
-                        self.cardsDF = setDF
-                    else: # Else concatenate onto existing dataframe 
-                        self.cardsDF = pd.concat([self.cardsDF, setDF])
-                    # Update the images for the set
-                    setImgDF = self.updateImages(setID, setDF)
-                    if self.imgDF is None: # if first set, add only it
-                        self.imgDF = setImgDF
-                    else: # Else concatenate onto existing dataframe
-                        self.imgDF = pd.concat([self.imgDF, setImgDF])
-                    print('Completed update of:', setID, "set", i, "of", numSets, "adding", len(setDF.index), 'cards for a total of', len(self.imgDF.index), 'cards')
-            # Save the newly made DataFrames in the cache directory 
-            self.cardsDF.to_pickle(os.path.join(self.CacheDir, 'CardsDF.pkl'))
-            self.imgDF.to_pickle(os.path.join(self.CacheDir, 'ImgDF.pkl'))
-        else: # if not updated
-            # Read the DataFrames from cached files
-            self.cardsDF = pd.read_pickle(os.path.join(self.CacheDir, 'CardsDF.pkl'))
-            self.setsDF = pd.read_pickle(os.path.join(self.CacheDir, 'SetsDF.pkl'))
-            self.imgDF = pd.read_pickle(os.path.join(self.CacheDir, "ImgDF.pkl"))
-            if not 'hash_' + str(self.hashSize) + ":"+ str(self.numFreq) in self.imgDF.columns: # If the hashes have not been made before, make them
-                print("hash not found", self.hashSize, self.numFreq)
-                self.imgDF = self.updateAllImages()
-        if not 'hash' in self.cardsDF.columns:
-                self.cardsDF['hash'] = self.imgDF['hash_' + str(self.hashSize) + ":"+ str(self.numFreq)]
+    def updateSets(self):
+        sets = Set.all() # Pull new Sets List
+        setsDF = pd.DataFrame(vars(set) for set in sets) # Convert to pandas dataframe
+        self.updatedCards = []
+        if os.path.exists(os.path.join(self.CacheDir, "setsDF.pkl")): # If we have a cache, check it
+            oldSets = pd.read_pickle(os.path.join(self.CacheDir, "setsDF.pkl"))
+            latestUpdate = oldSets['updatedAt'].max()
+            if latestUpdate < setsDF['updatedAt'].max():
+                # We updated
+                updatedSets = setsDF[self.setsDF['updatedAt'] > latestUpdate]
+                updatedSets.apply(lambda x: self.updateSet(x), axis = 1)
+        else: # No old (we have no cache)
+            setsDF.apply(lambda x: self.updateSet(x), axis = 1)
+        setsDF.to_pickle(os.path.join(self.CacheDir, "setsDF.pkl"))
+        self.threadedGetImagesStart(self.updatedCards, False)
     
-    def updateAllImages(self):
-        mp.set_start_method("spawn", force = True)
-        context = mp.get_context('spawn')
-        mrMan = context.Manager()
-        dataQueue = mrMan.Queue()
-        retLock = mrMan.Lock()
-        threads = {}
-        sets = set()
-        self.cardsDF.apply(lambda x: dataQueue.put(x), axis = 1)
-        self.cardsDF.apply(lambda x: sets.add(x['setID']), axis = 1)
-        #print('qq', dataQueue.qsize())
-        #print(dataQueue.qsize())
-        print("Start of Thread pooling with", dataQueue.qsize(), 'cards')
-        for i in range(min(mp.cpu_count(), dataQueue.qsize())):
-            threads[i] = context.Process(
-                target=self.updateImagesMulti,
-                args=(i, dataQueue, retLock)
-            )
-            threads[i].start()
-        print("Waiting for Threads to complete")
-        for t in threads.keys():
-            threads[t].join()
-        self.imgDF = pd.read_pickle(os.path.join(self.CacheDir, 'ImgDF.pkl'))
-        for s in sets:
-            print("reading info for set:", s)
-            setDF = pd.read_pickle(os.path.join(self.CacheDir, s + "_IMG.pkl"))
-            self.imgDF = pd.concat([self.imgDF, setDF]).drop_duplicates('id', keep='last')
-            self.imgDF.to_pickle(os.path.join(self.CacheDir, "ImgDF.pkl"))
-
-    def updateImages(self, setID, setDF):
-        mp.set_start_method("spawn", force = True)
-        context = mp.get_context('spawn')
-        mrMan = context.Manager()
-        dataQueue = mrMan.Queue()
-        retLock = mrMan.Lock()
-        threads = {}
-        setDF.apply(lambda x: dataQueue.put(x), axis = 1)
-        #print('qq', dataQueue.qsize())
-        #print(dataQueue.qsize())
-        #print("Start of Thread pooling with", dataQueue.qsize(), 'cards')
-        for i in range(min(mp.cpu_count(), dataQueue.qsize())):
-            threads[i] = context.Process(
-                target=self.updateImagesMulti,
-                args=(i, dataQueue, retLock)
-            )
-            threads[i].start()
-        #print("Waiting for Threads to complete")
-        for t in threads.keys():
-            threads[t].join()
-        imgDF = pd.read_pickle(os.path.join(self.CacheDir, setID + '_IMG.pkl'))
-        return imgDF
-    
-    def updateImagesMulti(self, id, cards: mp.Queue, retLock):
-        #print("Starting Thread:", id, "with", cards.qsize(), 'cards to process')
-        while not cards.empty():
-            card = cards.get()
-            self.updateImageMulti(card, retLock)
-
-    def updateImageMulti(self, card, retLock):
-        imgDF = None
-        with retLock:
-            if os.path.exists(os.path.join(self.CacheDir, card['setID'] + '_IMG.pkl')):
-                imgDF = pd.read_pickle(os.path.join(self.CacheDir, card['setID'] + '_IMG.pkl'))
-        if (imgDF is None) or (not card['id'] in imgDF['id'].values):
-            if not os.path.exists(os.path.join(self.ImagesDir, card['setSeries'], card['setName'], card['id'] + " (" + card['name'] + ").png")):
-                imageURL = card['images']['large']
-                imgReqResp = requests.get(imageURL, stream=True)
-                img = Image.open(imgReqResp.raw)
+    def updateSet(self, set:pd.DataFrame):
+        print("updating set:", set['id'])
+        cards = []
+        i = 1
+        ret = Card.where(q='set.id:' + set['id'], page=i, pageSize=250)
+        while ret:
+        #for i in range(math.ceil(set['total']/250)):
+        #    ret = Card.where(q='set.id:' + set['id'], page=(i + 1), pageSize=250)
+            for card in ret:
+                cards.append(card)
+                self.updatedCards.append(card)
+            if self.cardsDF is None:
+                self.cardsDF = pd.DataFrame(vars(card) for card in cards)
             else:
-                img = Image.open(os.path.join(self.ImagesDir, card['setSeries'], card['setName'], card['id'] + " (" + card['name'] + ").png"))
+                # self.cardsDF = pd.concat([pd.read_pickle(os.path.join(self.CacheDir, "cardsDF.pkl")), pd.DataFrame(vars(card) for card in cards)])
+                self.cardsDF = pd.concat([self.cardsDF, pd.DataFrame(vars(card) for card in cards)]).drop_duplicates(['id'], keep="last")
+            self.cardsDF.set_index(['id'], drop=False, inplace=True)
+            self.cardsDF.to_pickle(os.path.join(self.CacheDir, "cardsDF.pkl"))
+            i = i + 1
+            ret = Card.where(q='set.id:' + set['id'], page=i, pageSize=250)
+        
+
+    def loadSets(self):
+        setsDF = pd.read_pickle(os.path.join(self.CacheDir, "setsDF.pkl"))
+        if not os.path.exists(os.path.join(self.CacheDir, "imgDF.pkl")):
+            setsDF.apply(lambda x: self.loadSet(x), axis = 1)
+        imgHashColName = "hash_" + str(self.hashSize) + ":" + str(self.numFreq)
+        imgDF = pd.read_pickle(os.path.join(self.CacheDir, "imgDF.pkl"))
+        imgDF.apply(lambda x: self.applyHashtoCardsDF(x['id'], x[imgHashColName]), axis = 1)
+        #self.cardsDF['hash'] = imgDF[self.cardsDF['id'] == imgDF['id']][imgHashColName]
+
+    def loadSet(self, set):
+        print("loading set", set['name'])
+        imgHashColName = "hash_" + str(self.hashSize) + ":" + str(self.numFreq)
+        imgDF = None if not os.path.exists(os.path.join(self.CacheDir, "imgDF.pkl")) else pd.read_pickle(os.path.join(self.CacheDir, "imgDF.pkl"))
+        setDF = pd.read_pickle(os.path.join(self.CacheDir, "Sets", set['id'] + "_IMG.pkl"))
+        #setDF.apply(lambda x: self.applyHashtoCardsDF(x['id'], x[imgHashColName]), axis = 1)
+        if imgDF is None:
+            imgDF = setDF
+        else:
+            imgDF = pd.concat([imgDF, setDF]).drop_duplicates(['id'], keep="last")
+        imgDF.to_pickle(os.path.join(self.CacheDir, "imgDF.pkl"))
+        
+    def applyHashtoCardsDF(self, id, hashValue):
+        self.cardsDF.at[id, 'hash'] = hashValue
+        self.cardsDF.at[id, 'hash_diff'] = hashValue
+
+    def threadedGetImagesStart(self, cards, force):
+        # Multithreaded support
+        mp.set_start_method("spawn", force = True)
+        context = mp.get_context('spawn')
+        mrMan = context.Manager()
+        dataQueue = mrMan.Queue()
+        for card in cards:
+            dataQueue.put(card)
+        retLock = mrMan.Lock()
+        threads = {}
+        if not os.path.exists(os.path.join(self.CacheDir, "Sets")):
+            os.makedirs(os.path.join(self.CacheDir, "Sets"))
+        print("Start of Thread pooling with", dataQueue.qsize(), "cards and", min(mp.cpu_count(), dataQueue.qsize()), "threads")
+        for i in range(min(mp.cpu_count(), dataQueue.qsize())):
+            threads[i] = context.Process(
+                target=self.getImages,
+                args=(force, i, dataQueue, retLock),
+            )
+            threads[i].start()
+        print("Waiting for threads to complete")
+        for t in threads.keys():
+            threads[t].join()
+
+    def getImages(self, force, threadID: int, dataQueue, retLock):
+        print("Starting Thread:", threadID, "with", dataQueue.qsize(), "cards to process")
+        while not dataQueue.empty():
+            card = dataQueue.get()
+            self.getImage(card, force, retLock)
+
+    def getImage(self, card: Card, force, retLock):
+        card = vars(card)
+        setInfo = vars(card['set'])
+        imgPath = os.path.join(self.ImagesDir, setInfo['series'], setInfo['name'], card['id'] + " ("  + card['name'] + ").png")
+        imgDF = None
+        imgDFPath = os.path.join(self.CacheDir, "Sets", setInfo['id'] + "_IMG.pkl")
+        imgHashColName = "hash_" + str(self.hashSize) + ":" + str(self.numFreq)
+        with retLock:
+            if os.path.exists(imgDFPath):
+                imgDF = pd.read_pickle(imgDFPath)
+        if (imgDF is None) or (not card['id'] in imgDF['id']) or (imgHashColName in imgDF.columns) or pd.isna(imgDF.at[card['id'], imgHashColName]):
+            if not os.path.exists(imgPath) or force:
+                imgURL = card['images'].large
+                imgReqResp = requests.get(imgURL, stream=True)
+                img = Image.open(imgReqResp.raw)
+                img.save(imgPath)
+            else:
+                img = Image.open(imgPath)
             img = img.convert('RGBA')
-            hash = ih.phash(img, self.hashSize, self.numFreq)
+            hash = ih.phash(img, hash_size=self.hashSize, highfreq_factor=self.numFreq)
             data = {
                 'id': [card['id']],
-                #'img': [img],
-                'hash_' + str(self.hashSize) + ":"+ str(self.numFreq): [hash]
+                imgHashColName: [hash]
             }
-            newDF = pd.DataFrame.from_dict(data)
-            newDF.set_index('id', inplace=True, drop=False)
+            newDF = pd.DataFrame(data)
             if imgDF is None:
                 imgDF = newDF
             else:
-                with retLock:
-                    imgDF = pd.concat([pd.read_pickle(os.path.join(self.CacheDir, card['setID'] + '_IMG.pkl')), newDF]).drop_duplicates(['id'])
-        else:
+                imgDF = pd.concat([imgDF, newDF]).drop_duplicates(['id'], keep="last")
             with retLock:
-                imgDF = pd.read_pickle(os.path.join(self.CacheDir, card['setID'] + '_IMG.pkl'))
-            if (not ('hash_' + str(self.hashSize) + ":"+ str(self.numFreq)) in imgDF.columns) or (pd.isna(imgDF.at[card['id'], 'hash_' + str(self.hashSize) + ":"+ str(self.numFreq)])):
-                print('Hashing with new size of:', self.hashSize, "for", card['id'])
-                if not os.path.exists(os.path.join(self.ImagesDir, card['setSeries'], card['setName'], card['id'] + " (" + card['name'] + ").png")):
-                    imageURL = card['images']['large']
-                    imgReqResp = requests.get(imageURL, stream=True)
-                    img = Image.open(imgReqResp.raw)
+                if os.path.exists(imgDFPath):
+                    pd.concat([pd.read_pickle(imgDFPath), imgDF.dropna()]).drop_duplicates(['id'], keep="last").to_pickle(imgDFPath)
                 else:
-                    img = Image.open(os.path.join(self.ImagesDir, card['setSeries'], card['setName'], card['id'] + " (" + card['name'] + ").png"))
-                img = img.convert('RGBA')
-                hash = ih.phash(img, self.hashSize, self.numFreq)
-                imgDF.at[card['id'], 'hash_' + str(self.hashSize) + ":"+ str(self.numFreq)] = hash
-        with retLock:
-            if os.path.exists(os.path.join(self.CacheDir, card['setID'] + '_IMG.pkl')):
-                pd.concat([pd.read_pickle(os.path.join(self.CacheDir, card['setID'] + "_IMG.pkl")), imgDF.dropna()]).drop_duplicates(['id'], keep='last').to_pickle(os.path.join(self.CacheDir, card['setID'] + "_IMG.pkl"))
-            else:
-                imgDF.to_pickle(os.path.join(self.CacheDir, card['setID'] + "_IMG.pkl"))
+                    imgDF.to_pickle(imgDFPath)
+
 
     def order_points(self, pts):
         """
@@ -401,11 +358,11 @@ class CardDetector:
             #print("cummin", cards['hash_diff'].cummin())
             #print("eq:", min_card['hash'] == card_hash)
             card_name = min_card['name']
-            card_set = min_card['setName']
+            card_set = min_card['set'].name
             det_cards.append((card_name, card_set))
             hashDiffMinThreshold = ((self.cardsDF['hash_diff'].max() - self.cardsDF['hash_diff'].min())/10) + self.cardsDF['hash_diff'].min()
-            print("Diff", hashDiffMinThreshold)
-            print(self.cardsDF['hash_diff'].sort_values().head())
+            #print("Diff", hashDiffMinThreshold)
+            #print(self.cardsDF['hash_diff'].sort_values().head())
             detectedFallbackCards[(card_name, card_set)] = self.cardsDF[self.cardsDF['hash_diff'] < hashDiffMinThreshold]['hash_diff']
             #print(detectedFallbackCards[(card_name, card_set)])
             hash_diff = min_card['hash_diff']
@@ -451,26 +408,32 @@ class CardDetector:
         ret = {}
         for key in card.keys():
             if not key == 'images':
-                ret[key] = str(card.at[cardID, key])
+                if key == 'set':
+                    ret[key] = vars(card.at[cardID, key])
+                else:
+                    ret[key] = str(card.at[cardID, key])
             else:
                 ret[key] = {
-                    'small': card.at[cardID, key]['small'],
-                    'large': card.at[cardID, key]['large'],
+                    'small': card.at[cardID, key].small,
+                    'large': card.at[cardID, key].large,
                 }
         #print(ret)
         return ret
     
     def getPriceURL(self, cardID):
-        card = Card.where(q="id:" + cardID)
+        #card = Card.where(q="id:" + cardID)
+        card = self.getCard(cardID)
         if len(card) != 1:
             return ["ID " + cardID + " returned multiple cards, this should not happen"]
-        return card[0].tcgplayer.url
+        return card.iloc[0].tcgplayer.url
 
     def getCardVersions(self, cardID):
-        card = Card.where(q="id:" + cardID)
+        card = self.getCard(cardID)
         if len(card) != 1:
             return ["ID " + cardID + " returned multiple cards, this should not happen"]
-        priceInfo = card[0].tcgplayer.prices
+        if card.iloc[0].tcgplayer.prices == None: # this should only be for energies
+            return ["normal", "holofoil", "reverseHolofoil"]
+        priceInfo = card.iloc[0].tcgplayer.prices
         versions = []
         if not priceInfo.normal is None:
             versions.append("normal")
@@ -485,10 +448,12 @@ class CardDetector:
         return versions
 
     def getCardPrice(self, cardID, version='normal'):
-        card = Card.where(q="id:"+cardID)
+        card = self.cardsDF[self.cardsDF['id'] == cardID]
         if len(card) != 1:
             return ["ID " + cardID + " returned multiple cards, this should not happen"]
-        priceInfo = card[0].tcgplayer.prices
+        if card.iloc[0].tcgplayer.prices == None: # this should only be for energies
+            return 0.0
+        priceInfo = card.iloc[0].tcgplayer.prices
         if version == "normal":
             return priceInfo.normal.market
         if version == "holofoil":
@@ -613,7 +578,7 @@ class CardDetector:
         self.addDB.apply(lambda x: dbArr.append({
             "id": x['id'],
             "name": self.cardsDF.at[x['id'], 'name'],
-            "img": self.cardsDF.at[x['id'], 'images']['large'], 
+            "img": self.cardsDF.at[x['id'], 'images'].large, 
             "quantity": x['Quantity'],
             "variant": x['variant'],
             "lastCost": x['lastCost'] * x['Quantity'],
