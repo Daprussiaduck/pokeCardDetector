@@ -477,6 +477,7 @@ class CardDetector:
             dbArr.append({
                 "name": db,
                 "numEntries": len(df.index),
+                "numCards": int(df['Quantity'].sum()),
                 "estCost": df['lastCost'].sum()
             })
         return dbArr

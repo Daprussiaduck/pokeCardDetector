@@ -33,6 +33,7 @@ const reloadDBs = () => {
     fetch(`${baseURL}/DBs`).then((data) => {
         return data.json();
     }).then((data) => {
+        console.log(data)
         if (data.dbs){
             // Load DBs
             for (let i = 0; i < data.dbs.length; i++){
@@ -45,6 +46,10 @@ const reloadDBs = () => {
                 dbData = document.createElement("td");
                 dbData.ondblclick = viewDB;
                 dbData.innerText = data.dbs[i].numEntries;
+                dbRow.appendChild(dbData);
+                dbData = document.createElement("td");
+                dbData.ondblclick = viewDB;
+                dbData.innerText = data.dbs[i].numCards;
                 dbRow.appendChild(dbData);
                 dbData = document.createElement("td");
                 dbData.ondblclick = viewDB;
