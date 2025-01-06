@@ -88,8 +88,7 @@ class CardDetector:
             self.cardsDF.set_index(['id'], drop=False, inplace=True)
             self.cardsDF.to_pickle(os.path.join(self.CacheDir, "cardsDF.pkl"))
             i = i + 1
-            ret = Card.where(q='set.id:' + set['id'], page=i, pageSize=250)
-        
+            ret = Card.where(q='set.id:' + set['id'], page=i, pageSize=250)   
 
     def loadSets(self):
         setsDF = pd.read_pickle(os.path.join(self.CacheDir, "setsDF.pkl"))
@@ -179,7 +178,6 @@ class CardDetector:
                     pd.concat([pd.read_pickle(imgDFPath), imgDF.dropna()]).drop_duplicates(['id'], keep="last").to_pickle(imgDFPath)
                 else:
                     imgDF.to_pickle(imgDFPath)
-
 
     def order_points(self, pts):
         """
@@ -544,6 +542,11 @@ class CardDetector:
             return {
                 "success": False,
                 "err": "variant is not a real variant for card"
+            }
+        if "('%s', '%s')" % (cardID, variant) in self.addDB.index:
+            return {
+                "success": False,
+                "err": "Card is a duplicate, please try modifying that or removing it first before adding it again"
             }
         lastCost = self.getCardPrice(cardID, variant)
         self.addDB = pd.concat([self.addDB, pd.DataFrame({
