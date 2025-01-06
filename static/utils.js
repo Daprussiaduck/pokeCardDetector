@@ -228,8 +228,11 @@ export function searchCards(e){
             }
         });
     };
-    const query = document.getElementById("searchBox").value;
+    let query = document.getElementById("searchBox").value;
     console.log(query);
+    if (query.indexOf(":") == -1){
+        query = `name:${query}`;
+    }
     postJSON(`${window.location.origin}/query`, JSON.stringify({
         query: query
     })).then((data) => {
