@@ -53,7 +53,7 @@ const reloadDBs = () => {
                 dbRow.appendChild(dbData);
                 dbData = document.createElement("td");
                 dbData.ondblclick = viewDB;
-                dbData.innerText = data.dbs[i].estCost;
+                dbData.innerText = Intl.NumberFormat('en-US', {style: 'currency', currency: 'USD'}).format(data.dbs[i].estCost);
                 dbRow.appendChild(dbData);
                 dbData = document.createElement("td");
                 dbData.innerText = "";
