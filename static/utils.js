@@ -240,6 +240,7 @@ export function searchCards(e){
         if (data.success == true){
             console.log(data.cards);
             const CardDiv = document.getElementById("manualAddDiv");
+            CardDiv.innerHTML = "";
             for (let i = 0; i < data.cards.length; i++){
                 let cardDiv = document.createElement("div");
                 cardDiv.classList.add("cards", "card", "center");

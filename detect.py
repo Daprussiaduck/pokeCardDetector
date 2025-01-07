@@ -580,11 +580,11 @@ class CardDetector:
         return {"success": True}
     
     def updatePrice(self, cardID, variant, updatePriceForce=False):
-        card = self.addDB.loc[(self.addDB['id'] == cardID) & (self.addDB['variant'] == variant)].index.item()
-        #print(card)
+        card = self.addDB.index[(self.addDB['id'] == cardID) & (self.addDB['variant'] == variant)].item()
+        # print(card)
         lastCost = self.getCardPrice(cardID, variant, updatePriceForce)
         self.addDB.at[card, 'lastCost'] = lastCost
-        self.addDB.to_excel(self.DBPath)
+        
 
     def imgToBase64(self, card):
         imgPath = os.path.join(self.ImagesDir, card['set'].series, card['set'].name, card['id'] + " (" + card['name'] + ").png")
@@ -602,6 +602,7 @@ class CardDetector:
         if self.addDB is None:
             return {"db": []}
         self.addDB.apply(lambda x: self.updatePrice(x['id'], x['variant'], updatePriceForce), axis = 1)
+        self.addDB.to_excel(self.DBPath)
         dbArr = []
         self.addDB.apply(lambda x: dbArr.append({
             "id": x['id'],
