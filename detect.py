@@ -423,15 +423,17 @@ class CardDetector:
         card = self.getCard(cardID)
         if len(card) != 1:
             return ["ID " + cardID + " returned multiple cards, this should not happen"]
+        if card.iloc[0].tcgplayer is None:
+            return "https://prices.pokemontcg.io/tcgplayer/" + cardID
         return card.iloc[0].tcgplayer.url
 
     def getCardVersions(self, cardID):
         card = self.getCard(cardID)
         if len(card) != 1:
             return ["ID " + cardID + " returned multiple cards, this should not happen"]
-        print(card.iloc[0].tcgplayer.prices)
-        if card.iloc[0].tcgplayer.prices is None: # this should only be for energies
-            return ["normal", "holofoil", "reverseHolofoil"]
+        # print(card.iloc[0].tcgplayer.prices)
+        #if card.iloc[0].tcgplayer is None or card.iloc[0].tcgplayer.prices is None: # this should only be for energies
+        return ["normal", "holofoil", "reverseHolofoil"]
         priceInfo = card.iloc[0].tcgplayer.prices
         versions = []
         if not priceInfo.normal is None:
@@ -452,7 +454,7 @@ class CardDetector:
         card = self.cardsDF[self.cardsDF['id'] == cardID]
         if len(card) != 1:
             return ["ID " + cardID + " returned multiple cards, this should not happen"]
-        if card.iloc[0].tcgplayer.prices == None: # this should only be for energies
+        if card.iloc[0].tcgplayer is None or card.iloc[0].tcgplayer.prices is None: # this should only be for energies
             return 0.0
         dat = datetime.datetime.strptime(card.iloc[0].tcgplayer.updatedAt, "%Y/%m/%d").date()
         delta = datetime.timedelta(days = 14)
@@ -545,7 +547,7 @@ class CardDetector:
                 "variant": [variant],
                 "lastCost": [lastCost],
                 "priceURL": self.getPriceURL(cardID),
-                "timeAdded": datetime.datetime.now()
+                "timeAdded": datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-6), "CST"))
             })
             self.addDB.set_index(['index'], inplace=True)
             self.addDB.to_excel(self.DBPath)
