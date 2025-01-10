@@ -69,8 +69,8 @@ const addCard = (e) => {
     getJSON(`${baseURL}/versions/${e.target.value}`).then((data) => {
         const list = document.getElementById("variantSelect");
         list.innerHTML = "";
-        console.log(data);
-        console.log(typeof data)
+        //console.log(data);
+        //console.log(typeof data)
         for(let i = 0; i < data.length; i++){
             const li = document.createElement("li");
             const a = document.createElement("a");

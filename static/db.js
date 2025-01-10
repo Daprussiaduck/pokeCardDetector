@@ -2,11 +2,24 @@ import {getJSON, postJSON, putJSON, modifyNavBar, viewDB, editDB, showError} fro
 let baseURL = "";
 
 const sortTable = (index, reverse) => {
+    //console.log(`Index: ${index}, Reverse: ${reverse}`);
     const tableRows = Array.from(document.getElementById("dataTable").children);
     let newRows = [];
     newRows = tableRows.sort((a, b) => {
         if (reverse){
+            if (index == 8){
+                //console.log("a");
+                const datA = new Date(Array.from(a.children)[index].innerHTML);
+                const datB = new Date(Array.from(a.children)[index].innerHTML);
+                return datB.getTime() + datA.getTime();
+            }
             return Array.from(a.children)[index].innerHTML < Array.from(b.children)[index].innerHTML;
+        }
+        if (index == 8){
+            //console.log("b");
+            const datA = new Date(Array.from(a.children)[index].innerHTML);
+            const datB = new Date(Array.from(a.children)[index].innerHTML);
+            return datA.getTime() + datB.getTime();
         }
         return Array.from(a.children)[index].innerHTML > Array.from(b.children)[index].innerHTML;
     });
@@ -164,7 +177,8 @@ const tablePopulation = (element, dbName) => {
     tr.appendChild(td);
     td = document.createElement("td");
     const a = document.createElement("a");
-    a.innerText = element['lastCost'];
+    
+    a.innerText = Intl.NumberFormat('en-US', {style: 'currency', currency: 'USD'}).format(element['lastCost']);;
     a.href = element['priceURL'];
     td.appendChild(a);
     tr.appendChild(td);
@@ -188,10 +202,12 @@ const tablePopulation = (element, dbName) => {
 };
 
 const populateTable = (data) => {
+    //console.log(data);
     const table = document.getElementById("dataTable");
     table.innerHTML = "";
     if (typeof data.db !== "undefined"){ // Single View
         for (let i = 0; i < data['db'].length; i++){
+            //console.log("a");
             tablePopulation(data['db'][i], localStorage.getItem("selectedDB"));
         }
     } else { // All View
@@ -213,7 +229,7 @@ const loadDB = () => {
     const updatePrice = localStorage.getItem("priceUpdate");
     localStorage.setItem("priceUpdate", "false");
     if (allDBs === "true"){
-    postJSON(`${baseURL}/viewDB`, JSON.stringify({})).then((data) => {
+        postJSON(`${baseURL}/viewDB`, JSON.stringify({})).then((data) => {
             populateTable(data);
         });
     } else {
