@@ -547,7 +547,7 @@ class CardDetector:
                 "variant": [variant],
                 "lastCost": [lastCost],
                 "priceURL": self.getPriceURL(cardID),
-                "timeAdded": datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-6), "CST"))
+                "timeAdded": datetime.datetime.now() #datetime.timezone(datetime.timedelta(hours=-6), "CST"))
             })
             self.addDB.set_index(['index'], inplace=True)
             self.addDB.to_excel(self.DBPath)
@@ -603,8 +603,9 @@ class CardDetector:
                 }
         if self.addDB is None:
             return {"db": []}
-        self.addDB.apply(lambda x: self.updatePrice(x['id'], x['variant'], updatePriceForce), axis = 1)
-        self.addDB.to_excel(self.DBPath)
+        if updatePriceForce:
+            self.addDB.apply(lambda x: self.updatePrice(x['id'], x['variant'], updatePriceForce), axis = 1)
+            self.addDB.to_excel(self.DBPath)
         dbArr = []
         self.addDB.apply(lambda x: dbArr.append({
             "id": x['id'],

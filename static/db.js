@@ -7,19 +7,31 @@ const sortTable = (index, reverse) => {
     let newRows = [];
     newRows = tableRows.sort((a, b) => {
         if (reverse){
-            if (index == 8){
-                //console.log("a");
+            if (index === 8){
+                // console.log("a");
                 const datA = new Date(Array.from(a.children)[index].innerHTML);
-                const datB = new Date(Array.from(a.children)[index].innerHTML);
-                return datB.getTime() + datA.getTime();
+                const datB = new Date(Array.from(b.children)[index].innerHTML);
+                return datA < datB;
+            }
+            if (index === 6){
+                // console.log("a");
+                const aNum = +(Array.from(a.children)[index].innerText.substring(1));
+                const bNum = +(Array.from(b.children)[index].innerText.substring(1));
+                return aNum < bNum;
             }
             return Array.from(a.children)[index].innerHTML < Array.from(b.children)[index].innerHTML;
         }
-        if (index == 8){
-            //console.log("b");
+        if (index === 8){
+            // console.log("b");
             const datA = new Date(Array.from(a.children)[index].innerHTML);
-            const datB = new Date(Array.from(a.children)[index].innerHTML);
-            return datA.getTime() + datB.getTime();
+            const datB = new Date(Array.from(b.children)[index].innerHTML);
+            return datA > datB;
+        }
+        if (index === 6){
+            // console.log("b");
+            const aNum = (Array.from(a.children)[index].innerText.substring(1));
+            const bNum = (Array.from(b.children)[index].innerText.substring(1));
+            return aNum > bNum;
         }
         return Array.from(a.children)[index].innerHTML > Array.from(b.children)[index].innerHTML;
     });
