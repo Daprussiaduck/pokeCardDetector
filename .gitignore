@@ -9,3 +9,5 @@ test.key
 test.pem
 test.pfx
 **.OLD
+build
+PokemonCardDetect.code-workspace
